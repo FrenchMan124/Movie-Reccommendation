@@ -51,6 +51,15 @@ class User:
     def return_disliked(self):
         return self.disliked
 
+def set_current_user(user_id):
+    """ Assign the current user to an instance """
+    # Set the current user to do recommendations for
+    CURRENT_USER = ""   # Var to store instance of current user
+    for user in users:
+        if user.id == user_id:  # Change for current user
+            CURRENT_USER = user
+    return CURRENT_USER
+
 def import_movies():
     """ Load movie csv files movies class """
     import csv
@@ -111,6 +120,7 @@ def import_ratings(LIKED_RATING):
                                 
         print('Ratings, Processed {} lines.'.format(line_count))
 
+
 def similarity_index(CURRENT_USER, user):
     """
     Return the similarity index of two users Between —1.0 and 1.0.
@@ -122,9 +132,19 @@ def similarity_index(CURRENT_USER, user):
     # Here U1 and U2 are two users and we are comparing L1 and L2, the sets of movies they have both liked.
     # Divide the number of common elements in either set by the number of all the elements in both sets
     # S(U1, U2) = (L1 intersection L2) / (L1 union L2)
+    U1 = CURRENT_USER
+    U2 = user
+
+    L1 = U1.return_liked
+    D1 = U1.return_disliked
+ 
+    L2 = U2.return_liked
+    D2 = U2.return_disliked
     
     # If U1 and U2 like similar movies they should disliked similar movies, add the number of common dislikes
-    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)) / (L1 union L2 union D1 union D2)    
+    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)) / (L1 union L2 union D1 union D2)
+    similarity_index = 
+    
     
     # Considering the case where two users are polar opposities in their preference
     # Subtract the number of conflicting likes and dislikes of the two users from the number of their common
@@ -161,3 +181,17 @@ if __name__ == "__main__":
     # Store current user instance
     CURRENT_USER = set_current_user(current_user_id)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+        

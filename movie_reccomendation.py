@@ -75,8 +75,68 @@ def import_movies():
                 
         print('Movies, Processed {} lines.'.format(line_count))
 
+def import_ratings(LIKED_RATING):
+    """ Load ratings csv files to ratings and user classes """
+    id_list = []
+    import csv
+    with open('ratings.csv', encoding='utf-8') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        new_user_id = "_"
 
+        # Count the rows and discount the header
+        for row in csv_reader:
+            if line_count == 0: # Header row
+                print('Column names are {}'.format(", ".join(row)))
+                line_count += 1
+            else:
+                line_count += 1
 
+                """*** Add the imported data to the Rating class ***"""
+                # Add the imported data to the Rating class
+                Ratings(row[0], row[1], row[2])
+
+                """*** Add the imported data to the User class ***"""
+                if row[0] in id_list:
+                    # Add liked and disliked movies to the user instance
+                    if row[2] >= LIKED_RATING:   # If the rating is above the liked rating add it to the user's liked movies set
+                        users[int(row[0])-1].add_liked(row[1])
+                    else:   # Otherwise add it to the disliked movies set
+                        users[int(row[0])-1].add_disliked(row[1])
+                
+                # If the user ID changes, create new user
+                else:
+                    User(row[0])
+                    id_list.append(row[0])
+                                
+        print('Ratings, Processed {} lines.'.format(line_count))
+
+def similarity_index(CURRENT_USER, user):
+    """
+    Return the similarity index of two users Between —1.0 and 1.0.
+    Originally known as "coefficient de communaute" By Paul Jaccard
+    """
+    # This looks very complicated but it is simple, just build it step by step.
+    # You will be using the return methods built in the user class
+
+    # Here U1 and U2 are two users and we are comparing L1 and L2, the sets of movies they have both liked.
+    # Divide the number of common elements in either set by the number of all the elements in both sets
+    # S(U1, U2) = (L1 intersection L2) / (L1 union L2)
+    
+    # If U1 and U2 like similar movies they should disliked similar movies, add the number of common dislikes
+    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)) / (L1 union L2 union D1 union D2)    
+    
+    # Considering the case where two users are polar opposities in their preference
+    # Subtract the number of conflicting likes and dislikes of the two users from the number of their common
+    # likes and dislikes
+    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)
+    #               -(L1 intersection D2) — (L2 intersection D1) )
+    #               / (L1 union L2 union D1 union D2)
+
+    # This will return a value in the range of -1.0 and 1.0
+    # Two users having identical tastes will have a similarity index of 1.0
+    # Two users with conflicting tastes in movies will have a similarity index of -1.0
+    # Return this value
 
 
 if __name__ == "__main__":

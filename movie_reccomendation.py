@@ -126,37 +126,123 @@ def similarity_index(CURRENT_USER, user):
     Return the similarity index of two users Between —1.0 and 1.0.
     Originally known as "coefficient de communaute" By Paul Jaccard
     """
-    # This looks very complicated but it is simple, just build it step by step.
-    # You will be using the return methods built in the user class
-
-    # Here U1 and U2 are two users and we are comparing L1 and L2, the sets of movies they have both liked.
-    # Divide the number of common elements in either set by the number of all the elements in both sets
-    # S(U1, U2) = (L1 intersection L2) / (L1 union L2)
     U1 = CURRENT_USER
     U2 = user
 
-    L1 = U1.return_liked
-    D1 = U1.return_disliked
+    L1 = U1.return_liked()
+    D1 = U1.return_disliked()
  
-    L2 = U2.return_liked
-    D2 = U2.return_disliked
+    L2 = U2.return_liked()
+    D2 = U2.return_disliked()
     
-    # If U1 and U2 like similar movies they should disliked similar movies, add the number of common dislikes
-    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)) / (L1 union L2 union D1 union D2)
-    similarity_index = 
-    
-    
-    # Considering the case where two users are polar opposities in their preference
-    # Subtract the number of conflicting likes and dislikes of the two users from the number of their common
-    # likes and dislikes
-    # S(U1, U2) = ((L1 intersection L2) + (D1 intersection D2)
-    #               -(L1 intersection D2) — (L2 intersection D1) )
-    #               / (L1 union L2 union D1 union D2)
+    similarity = (len(L1&L2) + len(D1&D2) - len(L1&D2) - len(L2&D1)) / len(L1|L2|D1|D2)
 
-    # This will return a value in the range of -1.0 and 1.0
-    # Two users having identical tastes will have a similarity index of 1.0
-    # Two users with conflicting tastes in movies will have a similarity index of -1.0
-    # Return this value
+    return similarity
+
+def user_movies(user):
+    """ Return the liked and disliked movie SETS for the given user """
+    # Return movies rated by a given user, you could do this through a union of the liked and disliked methods
+    movies_rated = ((user.return_liked) | (user.return_disliked))
+    return movies_rated
+    
+def return_user_liked(movie):
+    """ Return the set of all users who liked a movie """
+    # Create an empty set
+    users_liked = set()
+    # For each user
+    for user in users:
+        # If the movie is in the users set of liked movies
+        print(user.return_liked)
+        if movie in user.return_liked:
+            # Add the user to the set
+            users_liked.add(user)
+    # Return the set
+    return users_liked
+
+def return_user_disliked(movie):
+    """ Return the set of all users who liked a movie """
+    # Create an empty set
+    users_disliked = set()
+    # For each user
+    for user in users:
+        # If the movie is in the users set of disliked movies
+        print(user.return_disliked)
+        if movie in user.return_disliked:
+            # Add the user to the set
+            users_disliked.add(user)
+    # Return the set
+    return users_disliked
+
+def find_similar_users(CURRENT_USER):
+    """
+    Given a user, compute a list of other users who are similar
+    Store the list in a database (in this case a dictionary), along with their similarity indicies
+    Return the list of similar user in order of most to least similar
+    """
+    similar_users_set = set()
+    similar_user_instances = []
+    similar_users_ratio = {}
+
+    rated_movies = user_movies(user)
+    for movie in rated_movies:
+        similar_users_set.add(return_users_liked(movie) | return_users_disliked(movie))
+
+    for similar_user in similar_users_set:
+        if similar_user != CURRENT_USER:
+            similarity = similarity_index(CURRENT_USER, similar_user)
+            similar_users_ratio[similar_user] = similarity
+        
+    # Order users in terms of most similar
+    for user, similarity in (similar_users_ratio.items(), key=lambda x:x[1], reverse=True):
+        similar_user_instances.append(user)
+
+    return similar_user_instances
+
+
+def possibility_index(CURRENT_USER, movie):
+    """
+    Given a user and a movie (obviously the user should not have rated this movie yet)
+    Find all users who have rated the movie
+    Compute the similarity index of each user and use if to
+    Generate the possibility of a user liking a given movie
+    """
+
+    ## Finding the sum of the similarity indicies of all users who have LIKED a movie
+    liked_sum = 0  # Variable to store the sum of all the similarity indicies of all users who have liked a given movie
+    for user in return_user_liked(movie):
+        if user != CURRENT_USER:
+            liked_sum += similarity_index(CURRENT_USER, user)
+
+    ## Finding the sum of the similarity indicies of all users who have DISLIKED a movie
+    disliked_sum = 0
+    for user in return_user_disliked(movie):
+        if user != CURRENT_USER:
+            disliked_sum += similarity_index(CURRENT_USER, user)
+
+    possibility_index = (liked_sum - disliked_sum) / (len(return_users_liked(movie)) + len(return_users_disliked(movie)))
+    return possibility_index
+
+def return_unrated(CURRENT_USER):
+    """ Return a list of all unrated movie ids a given user has not rated """
+    # Create a list to store all movie ids of unrated movies
+    unrated_movies_ids = []
+    for user in similar_users:
+        unrated_movies = set()
+        unrated_movies.add(user_movies(user).difference(user_movies(CURRENT_USER)))
+
+        for movie in unrated_movies:
+            if movie not in unrated_movies_ids:
+                unrated_movies_ids.append(movie)
+
+    return unrated_movies_ids        
+        
+def unrated_movie_possibilities(CURRENT_USER):
+    """ Store all items the given user has not rated with the possibility index and return the dictionary """
+    # Create an empty dictionary to store all reccommended movies with their id and their possibility index
+    reccommended_movies = {}
+    for movie in return_unrated(CURRENT_USER):
+        movie.
+
 
 
 if __name__ == "__main__":
@@ -169,17 +255,18 @@ if __name__ == "__main__":
     import_movies()
     import_ratings(LIKED_RATING)
 
-    similarity_index(CURRENT_USER, users[5])
-    # Checking
-    print("\nLiked:\n", users[0].return_liked())
-    print("\nDisliked:\n", users[0].return_disliked())
-
     # Set the current user and number of recommendations
     current_user_id = '1'
     num_of_recommendations = 5
 
     # Store current user instance
     CURRENT_USER = set_current_user(current_user_id)
+    
+    sim_i = similarity_index(CURRENT_USER, users[7])
+    print("{:.2f}%".format(100-sim_i))
+
+    # Finding all the users who have rated the movies watched by the current user
+    similar_users = find_similar_users(CURRENT_USER)
     
 
 

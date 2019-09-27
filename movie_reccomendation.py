@@ -8,12 +8,15 @@
 
 class Movies:
     """ Movie class, genres is stored as a list """
-    def __init__(self, id, title, year, genres):
+    def __init__(self, id, year, title, genres):
         self.id = id
         self.title = title
         self.year = year
         self.genres = genres
         movies.append(self)
+
+    def id_get(self):
+        return self.id
 
 
 class Ratings:
@@ -63,12 +66,11 @@ def set_current_user(user_id):
 def import_movies():
     """ Load movie csv files movies class """
     import csv
-    with open('movies.csv', encoding='utf-8') as csv_file:
+    with open('lessMovies.csv', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
         for row in csv_reader:
             if line_count == 0: # Header row
-                print('Column names are {}'.format(", ".join(row)))
                 line_count += 1
             else:
                 line_count += 1
@@ -81,22 +83,18 @@ def import_movies():
                 
                 # ***Do some string processing to import into the Movie class ***
                 Movies(row[0], year, title, row[2])
-                
-        print('Movies, Processed {} lines.'.format(line_count))
 
 def import_ratings(LIKED_RATING):
     """ Load ratings csv files to ratings and user classes """
     id_list = []
     import csv
-    with open('ratings.csv', encoding='utf-8') as csv_file:
+    with open('lessRatings.csv', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
-        new_user_id = "_"
 
         # Count the rows and discount the header
         for row in csv_reader:
             if line_count == 0: # Header row
-                print('Column names are {}'.format(", ".join(row)))
                 line_count += 1
             else:
                 line_count += 1
@@ -109,16 +107,16 @@ def import_ratings(LIKED_RATING):
                 if row[0] in id_list:
                     # Add liked and disliked movies to the user instance
                     if row[2] >= LIKED_RATING:   # If the rating is above the liked rating add it to the user's liked movies set
+                        print("", row[1])
                         users[int(row[0])-1].add_liked(row[1])
                     else:   # Otherwise add it to the disliked movies set
+                        print("      ", row[1])
                         users[int(row[0])-1].add_disliked(row[1])
                 
                 # If the user ID changes, create new user
                 else:
                     User(row[0])
                     id_list.append(row[0])
-                                
-        print('Ratings, Processed {} lines.'.format(line_count))
 
 
 def similarity_index(CURRENT_USER, user):
@@ -141,8 +139,8 @@ def similarity_index(CURRENT_USER, user):
 
 def user_movies(user):
     """ Return the liked and disliked movie SETS for the given user """
-    # Return movies rated by a given user, you could do this through a union of the liked and disliked methods
-    movies_rated = ((user.return_liked) | (user.return_disliked))
+    # Return movies rated by a given user
+    movies_rated = (user.return_liked())|(user.return_disliked())
     return movies_rated
     
 def return_user_liked(movie):
@@ -152,8 +150,7 @@ def return_user_liked(movie):
     # For each user
     for user in users:
         # If the movie is in the users set of liked movies
-        print(user.return_liked)
-        if movie in user.return_liked:
+        if movie in user.return_liked():
             # Add the user to the set
             users_liked.add(user)
     # Return the set
@@ -166,8 +163,7 @@ def return_user_disliked(movie):
     # For each user
     for user in users:
         # If the movie is in the users set of disliked movies
-        print(user.return_disliked)
-        if movie in user.return_disliked:
+        if movie in user.return_disliked():
             # Add the user to the set
             users_disliked.add(user)
     # Return the set
@@ -183,17 +179,17 @@ def find_similar_users(CURRENT_USER):
     similar_user_instances = []
     similar_users_ratio = {}
 
-    rated_movies = user_movies(user)
+    rated_movies = user_movies(CURRENT_USER)
     for movie in rated_movies:
-        similar_users_set.add(return_users_liked(movie) | return_users_disliked(movie))
-
+        similar_users_set.update(return_user_liked(movie)|return_user_disliked(movie))
+    
     for similar_user in similar_users_set:
         if similar_user != CURRENT_USER:
             similarity = similarity_index(CURRENT_USER, similar_user)
             similar_users_ratio[similar_user] = similarity
         
     # Order users in terms of most similar
-    for user, similarity in (similar_users_ratio.items(), key=lambda x:x[1], reverse=True):
+    for user, similarity in sorted(similar_users_ratio.items(), key=lambda x:x[1], reverse=True):
         similar_user_instances.append(user)
 
     return similar_user_instances
@@ -219,32 +215,55 @@ def possibility_index(CURRENT_USER, movie):
         if user != CURRENT_USER:
             disliked_sum += similarity_index(CURRENT_USER, user)
 
-    possibility_index = (liked_sum - disliked_sum) / (len(return_users_liked(movie)) + len(return_users_disliked(movie)))
+    try:
+        possibility_index = (liked_sum - disliked_sum) / (len(return_user_liked(movie)) + len(return_user_disliked(movie)))
+    except ZeroDivisionError:
+        possibility_index = 0
     return possibility_index
 
 def return_unrated(CURRENT_USER):
     """ Return a list of all unrated movie ids a given user has not rated """
     # Create a list to store all movie ids of unrated movies
-    unrated_movies_ids = []
-    for user in similar_users:
+    unrated_movie_ids = []
+    for user in find_similar_users(CURRENT_USER):
         unrated_movies = set()
-        unrated_movies.add(user_movies(user).difference(user_movies(CURRENT_USER)))
-
+        unrated_movies.update(user_movies(user).difference(user_movies(CURRENT_USER)))
         for movie in unrated_movies:
-            if movie not in unrated_movies_ids:
-                unrated_movies_ids.append(movie)
+            if movie not in unrated_movie_ids:
+                unrated_movie_ids.append(movie)
 
-    return unrated_movies_ids        
+    return unrated_movie_ids        
         
 def unrated_movie_possibilities(CURRENT_USER):
     """ Store all items the given user has not rated with the possibility index and return the dictionary """
     # Create an empty dictionary to store all reccommended movies with their id and their possibility index
-    reccommended_movies = {}
-    for movie in return_unrated(CURRENT_USER):
-        movie.
+    recommended_movies = {}
+    unrated_movie_ids = return_unrated(CURRENT_USER)
+    for unrated_movie in unrated_movie_ids:
+        recommended_movies[unrated_movie] = possibility_index(CURRENT_USER, unrated_movie)
 
+    # Return the dictionary of reccommended movies
+    return recommended_movies
 
+def generate_recommendations(CURRENT_USER, num_recommendations):
+    """ Generating movie recommendations """
+    recommended_movies = unrated_movie_possibilities(CURRENT_USER)  # Rate all recommended
 
+    counter = 0
+    # Recommend the top five recommended movies using a dictionary sorted on values
+    highest_possibility = -1
+    for movie in movies:
+        if possibility_index(CURRENT_USER, movie.id_get()) > highest_possibility:
+            highest_possibility = possibility_index(CURRENT_USER, movie.id_get())
+    
+    print("******\nMovies\n******")
+    for i, j in sorted(recommended_movies.items(), key=lambda x:x[1], reverse=True):
+        if counter < len(recommended_movies):
+            for movie in movies:
+                if movie.id_get() == movie.id:
+                    print("GENERATE:", movie.title, movie.year, "POSSIBILITY: %{}".format(possibility_index(CURRENT_USER, movie.id_get()) / highest_possibility * 100), "\n")
+                    counter += 1
+    
 if __name__ == "__main__":
     LIKED_RATING = "4"  # Movies rated this score and above are considered liked
     movies = []     # Stores all instances of movies
@@ -255,18 +274,12 @@ if __name__ == "__main__":
     import_movies()
     import_ratings(LIKED_RATING)
 
-    # Set the current user and number of recommendations
-    current_user_id = '1'
-    num_of_recommendations = 5
-
     # Store current user instance
+    current_user_id = '1'
     CURRENT_USER = set_current_user(current_user_id)
-    
-    sim_i = similarity_index(CURRENT_USER, users[7])
-    print("{:.2f}%".format(100-sim_i))
 
-    # Finding all the users who have rated the movies watched by the current user
-    similar_users = find_similar_users(CURRENT_USER)
+    # Generate recommended movies
+    generate_recommendations(CURRENT_USER, 5)
     
 
 

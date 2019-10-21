@@ -4,7 +4,50 @@
 # Last edit: 06.09.19
 # A program that reccommends movies based on an algorithm and other 'users'
 
+from tkinter import *
+import tkinter as tk
+movie_title = []
+user_rating = []
+new_user = []
 
+
+class GUI:
+    """ dont know """
+    def __init__(self, parent):
+        self.new_user = int(ratings[-1].user_id) + 1
+        User(self.new_user)
+        self.CURRENT_USER = set_current_user(self.new_user)
+        self.parent = parent
+        # Control buttons
+        self.button_search = Button(root, text="Search for a movie", command=self.movie_search).grid(row=0, column=0)
+        
+
+    def movie_search(self):
+        """ Search the name of a student and print all the students info """
+        self.movie_entrybox = Entry(root)
+        self.movie_entrybox.grid(row=1, column=0)
+
+        self.search_submit_button = Button(root, text="Submit", command=self.submit_search)
+        self.search_submit_button.grid(row=2, column=0)
+
+    def submit_search(self):
+        """ """
+        self.results = Listbox(root)
+        self.results.grid(row=3, column=0)
+        for movie in movies:
+            if self.movie_entrybox.get().lower() in movie.title.lower():
+                self.results.insert(END, movie.title)
+                
+
+
+
+
+
+    def getting_reccomenendeations(self):
+        
+        self.movie_listbox = Listbox(root)
+        self.movie_listbox.grid(row=3, column=1)
+        self.movie_listbox.insert(END, "The Toker")
 
 class Movies:
     """ Movie class, genres is stored as a list """
@@ -63,7 +106,7 @@ def set_current_user(user_id):
 def import_movies():
     """ Load movie csv files movies class """
     import csv
-    with open('movies_tiny.csv', encoding='utf-8') as csv_file:
+    with open('lessMovies.csv', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
         for row in csv_reader:
@@ -85,7 +128,7 @@ def import_ratings(LIKED_RATING):
     """ Load ratings csv files to ratings and user classes """
     id_list = []
     import csv
-    with open('ratings_tiny.csv', encoding='utf-8') as csv_file:
+    with open('lessRatings.csv', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
 
@@ -274,7 +317,14 @@ if __name__ == "__main__":
 
     # Generate recommended movies
     generate_recommendations(CURRENT_USER, 6)
-    
+
+
+#GUI
+root = tk.Tk()
+root.title("Movie Ratings")
+root.geometry("800x400+500+200")
+gui_1 = GUI(root)
+root.mainloop()
 
 
 
@@ -286,6 +336,3 @@ if __name__ == "__main__":
 
 
 
-
-
-        

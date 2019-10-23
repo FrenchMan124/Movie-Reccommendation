@@ -2,52 +2,83 @@
 # movie_reccomendation.py
 # Created: 29.08.19
 # Last edit: 06.09.19
-# A program that reccommends movies based on an algorithm and other 'users'
+# A program that reccommends movies based on an algorithm and other users
 
 from tkinter import *
 import tkinter as tk
-movie_title = []
-user_rating = []
-new_user = []
 
 
 class GUI:
-    """ dont know """
     def __init__(self, parent):
-        self.new_user = int(ratings[-1].user_id) + 1
-        User(self.new_user)
-        self.CURRENT_USER = set_current_user(self.new_user)
         self.parent = parent
-        # Control buttons
-        self.button_search = Button(root, text="Search for a movie", command=self.movie_search).grid(row=0, column=0)
-        
+
+        # Frames
+        self.search_frame = Frame(root).grid(row=0, column=0)
+        self.suggestions_frame = Frame(root).grid(row=0, column=1)
+        # Main buttons
+        self.button_search = Button(self.search_frame, text="Search for a movie", command=self.movie_search).grid(row=0, column=0)
+        self.button_suggestions = Button(self.suggestions_frame, text="View your suggestions", command=self.view_suggestions).grid(row=0, column=1)
 
     def movie_search(self):
-        """ Search the name of a student and print all the students info """
-        self.movie_entrybox = Entry(root)
+        """ Search the name of a movie """
+        self.movie_entrybox = Entry(self.search_frame)
         self.movie_entrybox.grid(row=1, column=0)
 
-        self.search_submit_button = Button(root, text="Submit", command=self.submit_search)
+        self.search_submit_button = Button(self.search_frame, text="Submit", command=self.submit_search)
         self.search_submit_button.grid(row=2, column=0)
 
+        self.selected = None
+
     def submit_search(self):
-        """ """
-        self.results = Listbox(root)
+        """ Display Listbox with all relevant movies """
+        self.results = Listbox(self.search_frame)
         self.results.grid(row=3, column=0)
         for movie in movies:
             if self.movie_entrybox.get().lower() in movie.title.lower():
                 self.results.insert(END, movie.title)
-                
+                self.results.bind('<<ListboxSelect>>',self.CurSelect)
 
+    def CurSelect(self, evt):
+        """ Display rating buttons if a movie is selected """
+        self.selected = self.results.get(self.results.curselection())
+        self.rate_buttons()
 
+    def rate_buttons(self):
+        """ Display five buttons with 1-5 as labels"""
+        self.star_frame = Frame(self.search_frame)
+        self.star_frame.grid(row=5, column=0)
 
+        self.rating_var = IntVar()
 
+        self.one_star = Radiobutton(self.star_frame, variable=self.rating_var, value=1, text="1", command=self.rate_movie).grid(row=0, column=0)
+        self.two_star = Radiobutton(self.star_frame, variable=self.rating_var, value=2, text="2", command=self.rate_movie).grid(row=0, column=1)
+        self.three_star = Radiobutton(self.star_frame, variable=self.rating_var, value=3, text="3", command=self.rate_movie).grid(row=0, column=2)
+        self.four_star = Radiobutton(self.star_frame, variable=self.rating_var, value=4, text="4", command=self.rate_movie).grid(row=0, column=3)
+        self.five_star = Radiobutton(self.star_frame, variable=self.rating_var, value=5, text="5", command=self.rate_movie).grid(row=0, column=4)
 
-    def getting_reccomenendeations(self):
+    def rate_movie(self):
+        """ Add movie to user's liked or disliked set depending on what they rated the movie """
+        for movie in movies:
+            if movie.title == self.selected:
+                rated_movie_id = movie.id
+        if self.rating_var.get() >= int(LIKED_RATING):
+            current_user.add_liked(rated_movie_id)
+        elif self.rating_var.get() <= int(LIKED_RATING):
+            current_user.add_disliked(rated_movie_id)
+
+    def view_suggestions(self):
+        """ Create listbox that displays the users suggested movies """
+        recommended_movies_dict = generate_recommendations(current_user, 5)
         
-        self.movie_listbox = Listbox(root)
-        self.movie_listbox.grid(row=3, column=1)
-        self.movie_listbox.insert(END, "The Toker")
+        # Recommend the top five recommended movies using a dictionary sorted on values
+        highest_possibility = -1
+        for movie in recommended_movies_dict:
+            if possibility_index(current_user, movie.id) > highest_possibility:
+                highest_possibility = possibility_index(current_user, movie.id)
+
+        for movie in recommended_movies_dict:
+            Label(self.suggestions_frame, text=(movie.title, movie.year, "{}%".format(round(possibility_index(current_user, movie.id) / highest_possibility * 100, 1)))).grid(column=1)  
+
 
 class Movies:
     """ Movie class, genres is stored as a list """
@@ -97,11 +128,11 @@ class User:
 def set_current_user(user_id):
     """ Assign the current user to an instance """
     # Set the current user to do recommendations for
-    CURRENT_USER = ""   # Var to store instance of current user
+    current_user = ""   # Var to store instance of current user
     for user in users:
         if user.id == user_id:  # Change for current user
-            CURRENT_USER = user
-    return CURRENT_USER
+            current_user = user
+    return current_user
 
 def import_movies():
     """ Load movie csv files movies class """
@@ -120,7 +151,7 @@ def import_movies():
                 year = (row[1])[-5:-1]
                 title = (row[1])[0:-6]
                 id = (row[0])
-                
+
                 # ***Do some string processing to import into the Movie class ***
                 Movies(row[0], year, title, row[2])
 
@@ -160,21 +191,20 @@ def import_ratings(LIKED_RATING):
                     else:
                         users[int(row[0])-1].add_disliked(row[1])
 
-
-def similarity_index(CURRENT_USER, user):
+def similarity_index(current_user, user):
     """
     Return the similarity index of two users Between —1.0 and 1.0.
     Originally known as "coefficient de communaute" By Paul Jaccard
     """
-    U1 = CURRENT_USER
+    U1 = current_user
     U2 = user
 
     L1 = U1.return_liked()
     D1 = U1.return_disliked()
- 
+
     L2 = U2.return_liked()
     D2 = U2.return_disliked()
-    
+
     similarity = (len(L1&L2) + len(D1&D2) - len(L1&D2) - len(L2&D1)) / len(L1|L2|D1|D2)
 
     return similarity
@@ -184,7 +214,7 @@ def user_movies(user):
     # Return movies rated by a given user
     movies_rated = (user.return_liked())|(user.return_disliked())
     return movies_rated
-    
+
 def return_user_liked(movie):
     """ Return the set of all users who liked a movie """
     # Create an empty set
@@ -204,10 +234,10 @@ def return_user_disliked(movie):
     for user in users:
         if movie in user.return_disliked():
             users_disliked.add(user)
-    
+
     return users_disliked
 
-def find_similar_users(CURRENT_USER):
+def find_similar_users(current_user):
     """
     Given a user, compute a list of other users who are similar
     Store the list in a database (in this case a dictionary), along with their similarity indicies
@@ -217,23 +247,22 @@ def find_similar_users(CURRENT_USER):
     similar_user_instances = []
     similar_users_ratio = {}
 
-    rated_movies = user_movies(CURRENT_USER)
+    rated_movies = user_movies(current_user)
     for movie in rated_movies:
         similar_users_set.update(return_user_liked(movie)|return_user_disliked(movie))
-    
+
     for similar_user in similar_users_set:
-        if similar_user.id != CURRENT_USER.id:
-            similarity = similarity_index(CURRENT_USER, similar_user)
+        if similar_user.id != current_user.id:
+            similarity = similarity_index(current_user, similar_user)
             similar_users_ratio[similar_user] = similarity
-        
+
     # Order users in terms of most similar
     for user, similarity in sorted(similar_users_ratio.items(), key=lambda x:x[1], reverse=True):
         similar_user_instances.append(user)
 
     return similar_user_instances
 
-
-def possibility_index(CURRENT_USER, movie):
+def possibility_index(current_user, movie):
     """
     Given a user and a movie (obviously the user should not have rated this movie yet)
     Find all users who have rated the movie
@@ -244,14 +273,14 @@ def possibility_index(CURRENT_USER, movie):
     ## Finding the sum of the similarity indicies of all users who have LIKED a movie
     liked_sum = 0  # Variable to store the sum of all the similarity indicies of all users who have liked a given movie
     for user in return_user_liked(movie):
-        if user != CURRENT_USER:
-            liked_sum += similarity_index(CURRENT_USER, user)
+        if user != current_user:
+            liked_sum += similarity_index(current_user, user)
 
     ## Finding the sum of the similarity indicies of all users who have DISLIKED a movie
     disliked_sum = 0
     for user in return_user_disliked(movie):
-        if user != CURRENT_USER:
-            disliked_sum += similarity_index(CURRENT_USER, user)
+        if user != current_user:
+            disliked_sum += similarity_index(current_user, user)
 
     try:
         possibility_index = (liked_sum - disliked_sum) / (len(return_user_liked(movie)) + len(return_user_disliked(movie)))
@@ -259,48 +288,45 @@ def possibility_index(CURRENT_USER, movie):
         possibility_index = 0
     return possibility_index
 
-def return_unrated(CURRENT_USER):
+def return_unrated(current_user):
     """ Return a list of all unrated movie ids a given user has not rated """
     # Create a list to store all movie ids of unrated movies
     unrated_movie_ids = []
-    for user in find_similar_users(CURRENT_USER):
-        unrated_movies = user_movies(user).difference(user_movies(CURRENT_USER))
+    for user in find_similar_users(current_user):
+        unrated_movies = user_movies(user).difference(user_movies(current_user))
         for movie in unrated_movies:
             if movie not in unrated_movie_ids:
                 unrated_movie_ids.append(movie)
 
     return unrated_movie_ids        
-        
-def unrated_movie_possibilities(CURRENT_USER):
+
+def unrated_movie_possibilities(current_user):
     """ Store all items the given user has not rated with the possibility index and return the dictionary """
     # Create an empty dictionary to store all reccommended movies with their id and their possibility index
     recommended_movies = {}
-    unrated_movie_ids = return_unrated(CURRENT_USER)
+    unrated_movie_ids = return_unrated(current_user)
     for unrated_movie in unrated_movie_ids:
-        recommended_movies[unrated_movie] = possibility_index(CURRENT_USER, unrated_movie)
+        recommended_movies[unrated_movie] = possibility_index(current_user, unrated_movie)
 
     # Return the dictionary of reccommended movies
     return recommended_movies
 
-def generate_recommendations(CURRENT_USER, num_recommendations):
+def generate_recommendations(current_user, num_recommendations):
     """ Generating movie recommendations """
-    recommended_movies = unrated_movie_possibilities(CURRENT_USER)  # Rate all recommended
+    recommended_movies_dictionary = {}
+    recommended_movies = unrated_movie_possibilities(current_user)  # Rate all recommended
 
     counter = 0
-    # Recommend the top five recommended movies using a dictionary sorted on values
-    highest_possibility = -1
-    for movie in movies:
-        if possibility_index(CURRENT_USER, movie.id) > highest_possibility:
-            highest_possibility = possibility_index(CURRENT_USER, movie.id)
-    
-    print("******\nMovies\n******")
+
     for i, j in sorted(recommended_movies.items(), key=lambda x:x[1], reverse=True):
         if counter < num_recommendations:
             for movie in movies:
                 if movie.id == i:
-                    print(movie.title, movie.year, "\n{}%".format(round(possibility_index(CURRENT_USER, movie.id) / highest_possibility * 100, 1)), "\n")
+                    recommended_movies_dictionary[movie] = movie.year, possibility_index(current_user, movie.id) 
+                    #print(movie.title, movie.year, "\n{}%".format(round(possibility_index(CURRENT_USER, movie.id) / highest_possibility * 100, 1)), "\n")
                     counter += 1
-    
+    return recommended_movies_dictionary
+
 if __name__ == "__main__":
     LIKED_RATING = "4"  # Movies rated this score and above are considered liked
     movies = []     # Stores all instances of movies
@@ -315,14 +341,15 @@ if __name__ == "__main__":
     current_user_id = '2'
     CURRENT_USER = set_current_user(current_user_id)
 
-    # Generate recommended movies
-    generate_recommendations(CURRENT_USER, 6)
-
+    #
+    new_user = int(ratings[-1].user_id) + 1
+    User(new_user)
+    current_user = set_current_user(new_user)
 
 #GUI
 root = tk.Tk()
 root.title("Movie Ratings")
-root.geometry("800x400+500+200")
+root.geometry("300x500")
 gui_1 = GUI(root)
 root.mainloop()
 

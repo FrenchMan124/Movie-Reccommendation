@@ -41,10 +41,11 @@ class GUI:
     def CurSelect(self, evt):
         """ Display rating buttons if a movie is selected """
         self.selected = self.results.get(self.results.curselection())
+        self.movie_label = Label(self.search_frame, text="Now rating {}:".format(self.selected)).grid(row=4, column=0)
         self.rate_buttons()
 
     def rate_buttons(self):
-        """ Display five buttons with 1-5 as labels"""
+        """ Display five buttons with 1-5 as labels"""        
         self.star_frame = Frame(self.search_frame)
         self.star_frame.grid(row=5, column=0)
 
@@ -63,8 +64,10 @@ class GUI:
                 rated_movie_id = movie.id
         if self.rating_var.get() >= int(LIKED_RATING):
             current_user.add_liked(rated_movie_id)
+            Label(self.search_frame, text="Liked!").grid()
         elif self.rating_var.get() <= int(LIKED_RATING):
             current_user.add_disliked(rated_movie_id)
+            Label(self.search_frame, text="Disiked").grid()
 
     def view_suggestions(self):
         """ Create listbox that displays the users suggested movies """
@@ -323,7 +326,6 @@ def generate_recommendations(current_user, num_recommendations):
             for movie in movies:
                 if movie.id == i:
                     recommended_movies_dictionary[movie] = movie.year, possibility_index(current_user, movie.id) 
-                    #print(movie.title, movie.year, "\n{}%".format(round(possibility_index(CURRENT_USER, movie.id) / highest_possibility * 100, 1)), "\n")
                     counter += 1
     return recommended_movies_dictionary
 
@@ -349,17 +351,6 @@ if __name__ == "__main__":
 #GUI
 root = tk.Tk()
 root.title("Movie Ratings")
-root.geometry("300x500")
+root.geometry("400x400")
 gui_1 = GUI(root)
 root.mainloop()
-
-
-
-
-
-
-
-
-
-
-

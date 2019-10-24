@@ -13,26 +13,26 @@ class GUI:
         self.parent = parent
 
         # Frames
-        self.search_frame = Frame(root).grid(row=0, column=0)
-        self.suggestions_frame = Frame(root).grid(row=0, column=1)
+        self.search_frame = Frame(root, width=250).grid(row=0, column=0)
+        self.suggestions_frame = Frame(root, width=250).grid(row=0, column=1)
         # Main buttons
-        self.button_search = Button(self.search_frame, text="Search for a movie", command=self.movie_search).grid(row=0, column=0)
-        self.button_suggestions = Button(self.suggestions_frame, text="View your suggestions", command=self.view_suggestions).grid(row=0, column=1)
+        self.button_search = Button(self.search_frame, text="Search for a movie\nRapua he kiriata", command=self.movie_search, width=35).grid(row=0, column=0)
+        self.button_suggestions = Button(self.suggestions_frame, text="View your suggestions\nTirohia o whakaaro", command=self.view_suggestions, width=35).grid(row=0, column=1)
 
     def movie_search(self):
         """ Search the name of a movie """
-        self.movie_entrybox = Entry(self.search_frame)
-        self.movie_entrybox.grid(row=1, column=0)
+        self.movie_entrybox = Entry(self.search_frame, width=32)
+        self.movie_entrybox.grid(row=1, column=0, pady=5, padx=5, ipady=10, sticky=W)
 
-        self.search_submit_button = Button(self.search_frame, text="Submit", command=self.submit_search)
-        self.search_submit_button.grid(row=2, column=0)
+        self.search_submit_button = Button(self.search_frame, text="Submit\nTuku", command=self.submit_search)
+        self.search_submit_button.grid(row=1, column=0, sticky=E)
 
         self.selected = None
 
     def submit_search(self):
         """ Display Listbox with all relevant movies """
-        self.results = Listbox(self.search_frame)
-        self.results.grid(row=3, column=0)
+        self.results = Listbox(self.search_frame, width=41, height=20)
+        self.results.grid(row=2, column=0)
         for movie in movies:
             if self.movie_entrybox.get().lower() in movie.title.lower():
                 self.results.insert(END, movie.title)
@@ -41,13 +41,13 @@ class GUI:
     def CurSelect(self, evt):
         """ Display rating buttons if a movie is selected """
         self.selected = self.results.get(self.results.curselection())
-        self.movie_label = Label(self.search_frame, text="Now rating {}:".format(self.selected)).grid(row=4, column=0)
+        self.movie_label = Label(self.search_frame, text="Now rating {0}:\nNa te whakatauranga {0}:".format(self.selected)).grid(row=4, column=0)
         self.rate_buttons()
 
     def rate_buttons(self):
         """ Display five buttons with 1-5 as labels"""        
         self.star_frame = Frame(self.search_frame)
-        self.star_frame.grid(row=5, column=0)
+        self.star_frame.grid(row=3, column=0)
 
         self.rating_var = IntVar()
 
@@ -64,10 +64,10 @@ class GUI:
                 rated_movie_id = movie.id
         if self.rating_var.get() >= int(LIKED_RATING):
             current_user.add_liked(rated_movie_id)
-            Label(self.search_frame, text="Liked!").grid()
+            Label(self.search_frame, text="Liked\nPēnei").grid()
         elif self.rating_var.get() <= int(LIKED_RATING):
             current_user.add_disliked(rated_movie_id)
-            Label(self.search_frame, text="Disiked").grid()
+            Label(self.search_frame, text="Disiked\nMea koretake").grid()
 
     def view_suggestions(self):
         """ Create listbox that displays the users suggested movies """
@@ -79,8 +79,12 @@ class GUI:
             if possibility_index(current_user, movie.id) > highest_possibility:
                 highest_possibility = possibility_index(current_user, movie.id)
 
+        self.suggested_movies_frame = LabelFrame(root, text="Recommended Movies\nKiriata E taunakitia ana")
+        self.suggested_movies_frame.grid(row=2, column=1)
+
         for movie in recommended_movies_dict:
-            Label(self.suggestions_frame, text=(movie.title, movie.year, "{}%".format(round(possibility_index(current_user, movie.id) / highest_possibility * 100, 1)))).grid(column=1)  
+            Label(self.suggested_movies_frame, text=
+                  (movie.title, movie.year, "{}%".format(round(possibility_index(current_user, movie.id) / highest_possibility * 100, 1))), width=35).grid(column=1)  
 
 
 class Movies:
@@ -351,6 +355,6 @@ if __name__ == "__main__":
 #GUI
 root = tk.Tk()
 root.title("Movie Ratings")
-root.geometry("400x400")
+root.geometry("510x530+705+150")
 gui_1 = GUI(root)
 root.mainloop()
